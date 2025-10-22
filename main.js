@@ -97,7 +97,7 @@ locateButton.addTo(map);
 // Όταν βρεθεί η θέση
 map.on('locationfound', function (e) {
   const userIcon = L.icon({
-    iconUrl: 'img/user-pin.png', // βάλε το δικό σου εικονίδιο
+    iconUrl: 'img/my_pin.png', // βάλε το δικό σου εικονίδιο
     iconSize: [32, 32],
     iconAnchor: [16, 32],
     popupAnchor: [0, -28]
