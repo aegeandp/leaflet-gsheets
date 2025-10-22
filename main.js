@@ -2,7 +2,7 @@
 
 /*
  * Script to display two tables from Google Sheets as point and geometry layers using Leaflet
- * The Sheets are then imported using PapaParse and overwrite the initially laded layers
+ * The Sheets are then imported using PapaParse and overwrite the initially loaded layers
  */
 
 // PASTE YOUR URLs HERE
@@ -26,26 +26,43 @@ let filterRing = null;
 function km(a, b) {
   return a.distanceTo(b) / 1000;
 }
-function isTile(l) { return l instanceof L.TileLayer; }
+function isTile(l) {
+  return l instanceof L.TileLayer;
+}
 function applySpatialFilter() {
   if (!spatial.enabled || !spatial.center) {
     // reset: εμφάνιση όλων
-    map.eachLayer(l => {
+    map.eachLayer((l) => {
       if (isTile(l)) return;
       if (l instanceof L.Marker && l.setOpacity) l.setOpacity(1);
       if (l instanceof L.Path && l.setStyle) {
-        const baseFill = (l.options && typeof l.options.fillOpacity === 'number') ? l.options.fillOpacity : 0.3;
+        const baseFill =
+          l.options && typeof l.options.fillOpacity === "number"
+            ? l.options.fillOpacity
+            : 0.3;
         l.setStyle({ opacity: 1, fillOpacity: baseFill });
       }
     });
-    if (filterRing) { map.removeLayer(filterRing); filterRing = null; }
+    if (filterRing) {
+      map.removeLayer(filterRing);
+      filterRing = null;
+    }
     return;
   }
-  // κράτα/ζωγράφισε κύκλο φίλτρου
-  if (filterRing) filterRing.setLatLng(spatial.center).setRadius(spatial.radiusKm * 1000);
-  else filterRing = L.circle(spatial.center, { radius: spatial.radiusKm * 1000, color: 'green', fillOpacity: 0.1 }).addTo(map);
 
-  map.eachLayer(l => {
+  // κράτα/ζωγράφισε κύκλο φίλτρου
+  if (filterRing)
+    filterRing
+      .setLatLng(spatial.center)
+      .setRadius(spatial.radiusKm * 1000);
+  else
+    filterRing = L.circle(spatial.center, {
+      radius: spatial.radiusKm * 1000,
+      color: "green",
+      fillOpacity: 0.1,
+    }).addTo(map);
+
+  map.eachLayer((l) => {
     if (isTile(l)) return;
     // MARKERS
     if (l instanceof L.Marker && l.getLatLng && l.setOpacity) {
@@ -57,7 +74,10 @@ function applySpatialFilter() {
       const c = l.getBounds().getCenter();
       const d = km(spatial.center, c);
       const show = d <= spatial.radiusKm;
-      const baseFill = (l.options && typeof l.options.fillOpacity === 'number') ? l.options.fillOpacity : 0.3;
+      const baseFill =
+        l.options && typeof l.options.fillOpacity === "number"
+          ? l.options.fillOpacity
+          : 0.3;
       l.setStyle({ opacity: show ? 1 : 0, fillOpacity: show ? baseFill : 0 });
     }
   });
@@ -67,8 +87,8 @@ function applySpatialFilter() {
  * init() is called when the page has loaded
  */
 function init() {
-  // Create a new Leaflet map centered on the continental US
-  map = L.map("map").setView([51.5, -0.1], 14);
+  // Create a new Leaflet map (π.χ. Αθήνα)
+  map = L.map("map").setView([37.9755, 23.7349], 14);
 
   // This is the Carto Positron basemap
   L.tileLayer(
@@ -82,42 +102,49 @@ function init() {
   ).addTo(map);
 
   // --- Κουμπί εντοπισμού θέσης (πάνω αριστερά) ---
-const locateButton = L.control({ position: 'topleft' });
-locateButton.onAdd = function (map) {
-  const btn = L.DomUtil.create('button', 'leaflet-bar');
-  btn.innerHTML = '📍';
-  btn.title = 'Εντόπισέ με & εφάρμοσε φίλτρο';
-  btn.style.width = '34px';
-  btn.style.height = '34px';
-  btn.onclick = () => map.locate({ setView: true, maxZoom: 16 });
-  return btn;
-};
-locateButton.addTo(map);
+  const locateButton = L.control({ position: "topleft" });
+  locateButton.onAdd = function (map) {
+    const btn = L.DomUtil.create("button", "leaflet-bar");
+    btn.innerHTML = "📍";
+    btn.title = "Εντόπισέ με & εφάρμοσε φίλτρο";
+    btn.style.width = "34px";
+    btn.style.height = "34px";
+    btn.onclick = () => map.locate({ setView: true, maxZoom: 16 });
+    return btn;
+  };
+  locateButton.addTo(map);
 
-// Όταν βρεθεί η θέση
-map.on('locationfound', function (e) {
-  const userIcon = L.icon({
-    iconUrl: 'img/my_pin.png', // βάλε το δικό σου εικονίδιο
-    iconSize: [32, 32],
-    iconAnchor: [16, 32],
-    popupAnchor: [0, -28]
+  // Όταν βρεθεί η θέση
+  map.on("locationfound", function (e) {
+    const userIcon = L.icon({
+      iconUrl: "img/my_pin.png", // βάλε το δικό σου εικονίδιο
+      iconSize: [32, 32],
+      iconAnchor: [16, 32],
+      popupAnchor: [0, -28],
+    });
+    L.marker(e.latlng, { icon: userIcon })
+      .addTo(map)
+      .bindPopup(`Είσαι εδώ (ακρ. ~${Math.round(e.accuracy)}m)`);
+
+    // ορισμός κέντρου φίλτρου κοντινότητας
+    spatial.center = e.latlng;
+    spatial.radiusKm = 3; // default ακτίνα
+    applySpatialFilter();
   });
-  L.marker(e.latlng, { icon: userIcon })
-    .addTo(map)
-    .bindPopup(`Είσαι εδώ (ακρ. ~${Math.round(e.accuracy)}m)`);
 
-  // ορισμός κέντρου φίλτρου κοντινότητας
-  spatial.center = e.latlng;
-  spatial.radiusKm = 3; // μπορείς να αλλάξεις default
-  applySpatialFilter();
-});
+  // Προαιρετικά: δεξί κλικ = θέσε χειροκίνητα κέντρο φίλτρου
+  map.on("contextmenu", function (e) {
+    spatial.center = e.latlng;
+    applySpatialFilter();
+  });
 
-// Προαιρετικά: δεξί κλικ = θέσε χειροκίνητα κέντρο φίλτρου
-map.on('contextmenu', function (e) {
-  spatial.center = e.latlng;
-  applySpatialFilter();
-});
+  // Προαιρετικά: διπλό κλικ = καθάρισε το φίλτρο
+  map.on("dblclick", function () {
+    spatial.center = null;
+    applySpatialFilter();
+  });
 
+  // Sidebar
   sidebar = L.control
     .sidebar({
       container: "sidebar",
@@ -158,9 +185,7 @@ map.on('contextmenu', function (e) {
  */
 function addGeoms(data) {
   data = data.data;
-  // Need to convert the PapaParse JSON into a GeoJSON
-  // Start with an empty GeoJSON of type FeatureCollection
-  // All the rows will be inserted into a single GeoJSON
+  // Convert the PapaParse JSON into a single GeoJSON FeatureCollection
   let fc = {
     type: "FeatureCollection",
     features: [],
@@ -178,20 +203,22 @@ function addGeoms(data) {
         fc.features.push(el);
       });
     }
-  // --- ΝΕΑ ΠΕΡΙΟΧΗ (Polygon) με popup ---
-const areaCoords = [
-  [37.980, 23.730],
-  [37.981, 23.738],
-  [37.976, 23.739],
-  [37.975, 23.731]
-];
-L.polygon(areaCoords, { color: 'blue', weight: 2, fillOpacity: 0.3 })
-  .addTo(map)
-  .bindPopup("<b>Νέα Περιοχή:</b> Κέντρο Αθήνας<br/>Περιοχή ενδιαφέροντος.");
-  
   }
 
-  // The geometries are styled slightly differently on mouse hovers
+  // --- ΝΕΑ ΠΕΡΙΟΧΗ (Polygon) με popup) — ΜΟΝΟ ΜΙΑ ΦΟΡΑ, εκτός του for ---
+  const areaCoords = [
+    [37.98, 23.73],
+    [37.981, 23.738],
+    [37.976, 23.739],
+    [37.975, 23.731],
+  ];
+  L.polygon(areaCoords, { color: "blue", weight: 2, fillOpacity: 0.3 })
+    .addTo(map)
+    .bindPopup(
+      "<b>Νέα Περιοχή:</b> Κέντρο Αθήνας<br/>Περιοχή ενδιαφέροντος."
+    );
+
+  // Στυλ γεωμετριών
   let geomStyle = { color: "#2ca25f", fillColor: "#99d8c9", weight: 2 };
   let geomHoverStyle = { color: "green", fillColor: "#2ca25f", weight: 3 };
 
@@ -205,10 +232,6 @@ L.polygon(areaCoords, { color: 'blue', weight: 2, fillOpacity: 0.3 })
           e.target.setStyle(geomHoverStyle);
         },
         click: function (e) {
-          // This zooms the map to the clicked geometry
-          // Uncomment to enable
-          // map.fitBounds(e.target.getBounds());
-
           // if this isn't added, then map.click is also fired!
           L.DomEvent.stopPropagation(e);
 
@@ -222,6 +245,9 @@ L.polygon(areaCoords, { color: 'blue', weight: 2, fillOpacity: 0.3 })
     },
     style: geomStyle,
   }).addTo(map);
+
+  // Εφάρμοσε φίλτρο (αν υπάρχει κέντρο)
+  applySpatialFilter();
 }
 
 /*
@@ -231,17 +257,26 @@ function addPoints(data) {
   data = data.data;
   let pointGroupLayer = L.layerGroup().addTo(map);
 
-  // Choose marker type. Options are:
-  // (these are case-sensitive, defaults to marker!)
+  // Επιλογή τύπου marker
   // marker: standard point with an icon
   // circleMarker: a circle with a radius set in pixels
   // circle: a circle with a radius set in meters
   let markerType = "marker";
 
   // Marker radius
-  // Wil be in pixels for circleMarker, metres for circle
+  // Will be in pixels for circleMarker, metres for circle
   // Ignore for point
   let markerRadius = 100;
+
+  // --- ΑΛΛΑΓΗ ΓΡΑΦΙΚΟΥ ΠΙΝΕΖΑΣ (custom εικόνα για markers) ---
+  const customIcon = L.icon({
+    iconUrl: "img/custom-pin.png", // δικό σου .png/.svg
+    iconSize: [38, 38],
+    iconAnchor: [19, 38],
+    popupAnchor: [0, -30],
+    shadowUrl: "css/images/marker-shadow.png",
+    shadowAnchor: [12, 40],
+  });
 
   for (let row = 0; row < data.length; row++) {
     let marker;
@@ -254,14 +289,11 @@ function addPoints(data) {
         radius: markerRadius,
       });
     } else {
-      marker = L.marker([data[row].lat, data[row].lon]);
+      marker = L.marker([data[row].lat, data[row].lon], { icon: customIcon });
     }
     marker.addTo(pointGroupLayer);
 
-    // UNCOMMENT THIS LINE TO USE POPUPS
-    //marker.bindPopup('<h2>' + data[row].name + '</h2>There's a ' + data[row].description + ' here');
-
-    // COMMENT THE NEXT GROUP OF LINES TO DISABLE SIDEBAR FOR THE MARKERS
+    // Sidebar περιεχόμενο
     marker.feature = {
       properties: {
         name: data[row].name,
@@ -278,33 +310,19 @@ function addPoints(data) {
         sidebar.open(panelID);
       },
     });
-    // COMMENT UNTIL HERE TO DISABLE SIDEBAR FOR THE MARKERS
-// --- ΝΕΑ ΤΟΠΟΘΕΣΙΑ (Marker) με popup ---
-const extraMarker = L.marker([37.9755, 23.7349]).addTo(map);
-extraMarker.setIcon(L.icon({
-  iconUrl: 'img/custom-pin.png',
-  iconSize: [38, 38],
-  iconAnchor: [19, 38],
-  popupAnchor: [0, -30],
-  shadowUrl: 'css/images/marker-shadow.png',
-  shadowAnchor: [12, 40]
-}));
-extraMarker.bindPopup("<b>Νέα Τοποθεσία:</b> Πλατεία Συντάγματος<br/>Αθήνα, Ελλάδα");
+  }
 
-    // AwesomeMarkers is used to create fancier icons
-    // --- ΑΛΛΑΓΗ ΓΡΑΦΙΚΟΥ ΠΙΝΕΖΑΣ (custom εικόνα αντί για AwesomeMarkers) ---
-const customIcon = L.icon({
-  iconUrl: 'img/custom-pin.png',    // βάλε δικό σου .png/.svg
-  iconSize: [38, 38],
-  iconAnchor: [19, 38],
-  popupAnchor: [0, -30],
-  shadowUrl: 'css/images/marker-shadow.png',
-  shadowAnchor: [12, 40]
-});
-if (!markerType.includes("circle")) {
-  marker.setIcon(customIcon);
+  // --- ΝΕΑ ΤΟΠΟΘΕΣΙΑ (Marker) με popup) — ΜΟΝΟ ΜΙΑ ΦΟΡΑ, εκτός του for ---
+  const extraMarker = L.marker([37.9755, 23.7349], { icon: customIcon }).addTo(
+    map
+  );
+  extraMarker.bindPopup(
+    "<b>Νέα Τοποθεσία:</b> Πλατεία Συντάγματος<br/>Αθήνα, Ελλάδα"
+  );
+
+  // Εφάρμοσε φίλτρο (αν υπάρχει κέντρο)
+  applySpatialFilter();
 }
-
 
 /*
  * Accepts any GeoJSON-ish object and returns an Array of
