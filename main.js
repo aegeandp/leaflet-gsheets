@@ -191,19 +191,18 @@ function addGeoms(data) {
     features: [],
   };
 
-  for (let row in data) {
-    // The Sheets data has a column 'include' that specifies if that row should be mapped
-    if (data[row].include == "y") {
-      let features = parseGeom(JSON.parse(data[row].geometry));
-      features.forEach((el) => {
-        el.properties = {
-          name: data[row].name,
-          description: data[row].description,
-        };
-        fc.features.push(el);
-      });
-    }
+ for (let row in data) {
+  if (data[row].include == "y") {
+    let features = parseGeom(JSON.parse(data[row].geometry));
+    features.forEach((el) => {
+      el.properties = { name: data[row].name, description: data[row].description };
+      fc.features.push(el);
+    });
   }
+} // <-- κλείνει το for
+
+// νέο polygon εδώ ...
+
 
   // --- ΝΕΑ ΠΕΡΙΟΧΗ (Polygon) με popup) — ΜΟΝΟ ΜΙΑ ΦΟΡΑ, εκτός του for ---
   const areaCoords = [
@@ -263,9 +262,7 @@ function addPoints(data) {
   // circle: a circle with a radius set in meters
   let markerType = "marker";
 
-  // Marker radius
-  // Will be in pixels for circleMarker, metres for circle
-  // Ignore for point
+  // Marker radius (για circleMarker/circle)
   let markerRadius = 100;
 
   // --- ΑΛΛΑΓΗ ΓΡΑΦΙΚΟΥ ΠΙΝΕΖΑΣ (custom εικόνα για markers) ---
@@ -280,17 +277,14 @@ function addPoints(data) {
 
   for (let row = 0; row < data.length; row++) {
     let marker;
-    if (markerType == "circleMarker") {
-      marker = L.circleMarker([data[row].lat, data[row].lon], {
-        radius: markerRadius,
-      });
-    } else if (markerType == "circle") {
-      marker = L.circle([data[row].lat, data[row].lon], {
-        radius: markerRadius,
-      });
+    if (markerType === "circleMarker") {
+      marker = L.circleMarker([data[row].lat, data[row].lon], { radius: markerRadius });
+    } else if (markerType === "circle") {
+      marker = L.circle([data[row].lat, data[row].lon], { radius: markerRadius });
     } else {
       marker = L.marker([data[row].lat, data[row].lon], { icon: customIcon });
     }
+
     marker.addTo(pointGroupLayer);
 
     // Sidebar περιεχόμενο
@@ -310,19 +304,15 @@ function addPoints(data) {
         sidebar.open(panelID);
       },
     });
-  }
+  } // <-- Κλείνει το for
 
   // --- ΝΕΑ ΤΟΠΟΘΕΣΙΑ (Marker) με popup) — ΜΟΝΟ ΜΙΑ ΦΟΡΑ, εκτός του for ---
-  const extraMarker = L.marker([37.9755, 23.7349], { icon: customIcon }).addTo(
-    map
-  );
-  extraMarker.bindPopup(
-    "<b>Νέα Τοποθεσία:</b> Πλατεία Συντάγματος<br/>Αθήνα, Ελλάδα"
-  );
+  const extraMarker = L.marker([37.9755, 23.7349], { icon: customIcon }).addTo(map);
+  extraMarker.bindPopup("<b>Νέα Τοποθεσία:</b> Πλατεία Συντάγματος<br/>Αθήνα, Ελλάδα");
 
   // Εφάρμοσε φίλτρο (αν υπάρχει κέντρο)
   applySpatialFilter();
-}
+} // <-- Κλείνει η addPoints
 
 /*
  * Accepts any GeoJSON-ish object and returns an Array of
@@ -331,32 +321,29 @@ function addPoints(data) {
  */
 function parseGeom(gj) {
   // FeatureCollection
-  if (gj.type == "FeatureCollection") {
+  if (gj.type === "FeatureCollection") {
     return gj.features;
   }
-
   // Feature
-  else if (gj.type == "Feature") {
+  else if (gj.type === "Feature") {
     return [gj];
   }
-
   // Geometry
   else if ("type" in gj) {
     return [{ type: "Feature", geometry: gj }];
   }
-
   // Coordinates
   else {
     let type;
-    if (typeof gj[0] == "number") {
+    if (typeof gj[0] === "number") {
       type = "Point";
-    } else if (typeof gj[0][0] == "number") {
+    } else if (typeof gj[0][0] === "number") {
       type = "LineString";
-    } else if (typeof gj[0][0][0] == "number") {
+    } else if (typeof gj[0][0][0] === "number") {
       type = "Polygon";
     } else {
       type = "MultiPolygon";
     }
     return [{ type: "Feature", geometry: { type: type, coordinates: gj } }];
   }
-}
+} // <-- Κλείνει η parseGeom και ΤΕΛΟΣ ΑΡΧΕΙΟΥ
