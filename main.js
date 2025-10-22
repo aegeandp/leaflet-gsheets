@@ -267,7 +267,7 @@ function addPoints(data) {
 
   // --- ΑΛΛΑΓΗ ΓΡΑΦΙΚΟΥ ΠΙΝΕΖΑΣ (custom εικόνα για markers) ---
   const customIcon = L.icon({
-    iconUrl: "img/custom-pin.png", // δικό σου .png/.svg
+    iconUrl: "img/custom_pin.png", // δικό σου .png/.svg
     iconSize: [38, 38],
     iconAnchor: [19, 38],
     popupAnchor: [0, -30],
