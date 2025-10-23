@@ -117,7 +117,7 @@ function init() {
   // Όταν βρεθεί η θέση
   map.on("locationfound", function (e) {
     const userIcon = L.icon({
-      iconUrl: "img/my_pin.png", // βάλε το δικό σου εικονίδιο
+      iconUrl: "img/user-pin.png", // βάλε το δικό σου εικονίδιο
       iconSize: [32, 32],
       iconAnchor: [16, 32],
       popupAnchor: [0, -28],
@@ -267,7 +267,7 @@ function addPoints(data) {
 
   // --- ΑΛΛΑΓΗ ΓΡΑΦΙΚΟΥ ΠΙΝΕΖΑΣ (custom εικόνα για markers) ---
   const customIcon = L.icon({
-    iconUrl: "img/my-pin.png", // δικό σου .png/.svg
+    iconUrl: "img/my_pin.png",
     iconSize: [38, 38],
     iconAnchor: [19, 38],
     popupAnchor: [0, -30],
