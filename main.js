@@ -117,7 +117,7 @@ function init() {
   // Όταν βρεθεί η θέση
   map.on("locationfound", function (e) {
     const userIcon = L.icon({
-      iconUrl: "img/user-pin.png", // βάλε το δικό σου εικονίδιο
+      iconUrl: "img/user-pin.png",
       iconSize: [32, 32],
       iconAnchor: [16, 32],
       popupAnchor: [0, -28],
@@ -204,7 +204,7 @@ function addGeoms(data) {
 // νέο polygon εδώ ...
 
 
-  // --- ΝΕΑ ΠΕΡΙΟΧΗ (Polygon) με popup) — ΜΟΝΟ ΜΙΑ ΦΟΡΑ, εκτός του for ---
+  // --- ΝΕΑ ΠΕΡΙΟΧΗ (Polygon) με popup) — ΜΟΝΟ ΜΙΑ ΦΟΡΑ
   const areaCoords = [
     [37.98, 23.73],
     [37.981, 23.738],
