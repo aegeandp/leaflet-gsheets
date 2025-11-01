@@ -118,6 +118,54 @@ function init() {
   };
   locateButton.addTo(map);
 
+  // --- Spatial control UI (toggle + radius + clear) ---
+  const spatialControl = L.control({ position: "topright" });
+  spatialControl.onAdd = function (map) {
+    const container = L.DomUtil.create("div", "leaflet-bar spatial-control");
+    container.style.padding = "6px";
+    container.style.background = "white";
+    container.style.minWidth = "120px";
+    container.innerHTML = `
+      <label style="display:block;font-size:12px;margin-bottom:4px"><input id="spatial-toggle" type="checkbox" ${
+      spatial.enabled ? "checked" : ""
+    }/> Χωρικό φίλτρο</label>
+      <label style="display:block;font-size:12px">Ακτίνα (km): <input id="spatial-radius" type="number" min="0" step="0.5" value="${spatial.radiusKm}" style="width:56px"/></label>
+      <button id="spatial-clear" style="display:block;margin-top:6px;width:100%">Καθάρισμα</button>
+      <div id="spatial-center" style="font-size:11px;margin-top:6px;color:#333"></div>
+    `;
+    L.DomEvent.disableClickPropagation(container);
+    return container;
+  };
+  spatialControl.addTo(map);
+
+  // Wire up control events (guard with timeout to ensure elements exist)
+  setTimeout(() => {
+    const toggle = document.getElementById("spatial-toggle");
+    const radiusInput = document.getElementById("spatial-radius");
+    const clearBtn = document.getElementById("spatial-clear");
+    const centerDisplay = document.getElementById("spatial-center");
+    if (toggle) {
+      toggle.addEventListener("change", (e) => {
+        spatial.enabled = e.target.checked;
+        applySpatialFilter();
+      });
+    }
+    if (radiusInput) {
+      radiusInput.addEventListener("change", (e) => {
+        const v = parseFloat(e.target.value);
+        spatial.radiusKm = isNaN(v) ? 0 : v;
+        applySpatialFilter();
+      });
+    }
+    if (clearBtn) {
+      clearBtn.addEventListener("click", () => {
+        spatial.center = null;
+        applySpatialFilter();
+        if (centerDisplay) centerDisplay.innerText = "";
+      });
+    }
+  }, 0);
+
   // Όταν βρεθεί η θέση
   map.on("locationfound", function (e) {
     const userIcon = L.icon({
@@ -134,18 +182,25 @@ function init() {
     spatial.center = e.latlng;
     spatial.radiusKm = 3; // default ακτίνα
     applySpatialFilter();
+    // Ενημέρωση εμφανισης κέντρου στο control
+    const cd = document.getElementById("spatial-center");
+    if (cd) cd.innerText = `Κέντρο: ${spatial.center.lat.toFixed(5)}, ${spatial.center.lng.toFixed(5)}`;
   });
 
   // Προαιρετικά: δεξί κλικ = θέσε χειροκίνητα κέντρο φίλτρου
   map.on("contextmenu", function (e) {
     spatial.center = e.latlng;
     applySpatialFilter();
+    const cd = document.getElementById("spatial-center");
+    if (cd) cd.innerText = `Κέντρο: ${spatial.center.lat.toFixed(5)}, ${spatial.center.lng.toFixed(5)}`;
   });
 
   // Προαιρετικά: διπλό κλικ = καθάρισε το φίλτρο
   map.on("dblclick", function () {
     spatial.center = null;
     applySpatialFilter();
+    const cd = document.getElementById("spatial-center");
+    if (cd) cd.innerText = "";
   });
 
   // Sidebar
