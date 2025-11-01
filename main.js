@@ -8,10 +8,10 @@
 // PASTE YOUR URLs HERE
 // these URLs come from Google Sheets 'shareable link' form
 // the first is the geometry layer and the second the points
-//let geomURL =
-//  "https://docs.google.com/spreadsheets/d/e/2PACX-1vTsAyA0Hpk_-WpKyN1dfqi5IPEIC3rqEiL-uwElxJpw_U7BYntc8sDw-8sWsL87JCDU4lVg2aNi65ES/pub?output=csv";
-//let pointsURL =
-//  "https://docs.google.com/spreadsheets/d/e/2PACX-1vSFQw9sVY16eQmN5TIjOH7CUaxeZnl_v6LcdE2goig1pSe9I3hipeOn1sOwmC4fS0AURefRWwcKExct/pub?output=csv";
+let geomURL =
+  "https://docs.google.com/spreadsheets/d/e/2PACX-1vTsAyA0Hpk_-WpKyN1dfqi5IPEIC3rqEiL-uwElxJpw_U7BYntc8sDw-8sWsL87JCDU4lVg2aNi65ES/pub?output=csv";
+let pointsURL =
+  "https://docs.google.com/spreadsheets/d/e/2PACX-1vSFQw9sVY16eQmN5TIjOH7CUaxeZnl_v6LcdE2goig1pSe9I3hipeOn1sOwmC4fS0AURefRWwcKExct/pub?output=csv";
 
 window.addEventListener("DOMContentLoaded", init);
 
@@ -64,6 +64,8 @@ function applySpatialFilter() {
 
   map.eachLayer((l) => {
     if (isTile(l)) return;
+    // Αγνόησε τα στατικά στοιχεία (πολύγωνο και marker)
+    if (l.options && (l.options.className === 'static-polygon' || l.options.className === 'static-marker')) return;
     // MARKERS
     if (l instanceof L.Marker && l.getLatLng && l.setOpacity) {
       const d = km(spatial.center, l.getLatLng());
@@ -89,6 +91,8 @@ function applySpatialFilter() {
 function init() {
   // Create a new Leaflet map (π.χ. Αθήνα)
   map = L.map("map").setView([37.9755, 23.7349], 14);
+
+  // (removed temporary test marker added during debugging)
 
   // This is the Carto Positron basemap
   L.tileLayer(
@@ -165,6 +169,8 @@ function init() {
     sidebar.close(panelID);
   });
 
+  // (removed duplicate static marker added during debugging)
+
   // Use PapaParse to load data from Google Sheets
   // And call the respective functions to add those to the map.
   Papa.parse(geomURL, {
@@ -177,6 +183,46 @@ function init() {
     header: true,
     complete: addPoints,
   });
+  // --- ΝΕΑ ΠΕΡΙΟΧΗ (Polygon) με popup) — ΜΟΝΟ ΜΙΑ ΦΟΡΑ
+  const areaCoords = [
+    [37.98, 23.73],
+    [37.981, 23.738],
+    [37.976, 23.739],
+    [37.975, 23.731],
+    [37.98, 23.73]  // Κλείσιμο του πολυγώνου
+  ];
+  const myPolygon = L.polygon(areaCoords, { 
+    color: "blue", 
+    weight: 2, 
+    fillOpacity: 0.3,
+    className: 'static-polygon' // Προσθήκη class για αναγνώριση
+  })
+  .addTo(map)
+  .bindPopup(
+    "<b>Νέα Περιοχή:</b> Κέντρο Αθήνας<br/>Περιοχή ενδιαφέροντος."
+  );
+
+  // Προσθήκη marker με my_pin.png (τελικό)
+  const customIcon = L.icon({
+    iconUrl: "img/my_pin.png",
+    iconSize: [38, 38],
+    iconAnchor: [19, 38],
+    popupAnchor: [0, -30],
+    shadowUrl: "css/images/marker-shadow.png",
+    shadowAnchor: [12, 40]
+  });
+
+  // Τοποθέτηση του marker στο κέντρο του πολυγώνου
+  const center = myPolygon.getBounds().getCenter();
+  const myMarker = L.marker(center, { 
+    icon: customIcon,
+    className: 'static-marker' // Για να μην επηρεάζεται από το spatial filter
+  })
+  .addTo(map)
+  .bindPopup("<b>My Custom Pin!</b><br>Στο κέντρο της περιοχής");
+  
+  // Κεντράρισμα στο πολύγωνο
+  map.fitBounds(myPolygon.getBounds());
 }
 
 /*
@@ -199,23 +245,9 @@ function addGeoms(data) {
       fc.features.push(el);
     });
   }
-} // <-- κλείνει το for
+  } // <-- κλείνει το for
 
-// νέο polygon εδώ ...
-
-
-  // --- ΝΕΑ ΠΕΡΙΟΧΗ (Polygon) με popup) — ΜΟΝΟ ΜΙΑ ΦΟΡΑ
-  const areaCoords = [
-    [37.98, 23.73],
-    [37.981, 23.738],
-    [37.976, 23.739],
-    [37.975, 23.731],
-  ];
-  L.polygon(areaCoords, { color: "blue", weight: 2, fillOpacity: 0.3 })
-    .addTo(map)
-    .bindPopup(
-      "<b>Νέα Περιοχή:</b> Κέντρο Αθήνας<br/>Περιοχή ενδιαφέροντος."
-    );
+  
 
   // Στυλ γεωμετριών
   let geomStyle = { color: "#2ca25f", fillColor: "#99d8c9", weight: 2 };
@@ -307,8 +339,7 @@ function addPoints(data) {
   } // <-- Κλείνει το for
 
   // --- ΝΕΑ ΤΟΠΟΘΕΣΙΑ (Marker) με popup) — ΜΟΝΟ ΜΙΑ ΦΟΡΑ, εκτός του for ---
-  const extraMarker = L.marker([37.9755, 23.7349], { icon: customIcon }).addTo(map);
-  extraMarker.bindPopup("<b>Νέα Τοποθεσία:</b> Πλατεία Συντάγματος<br/>Αθήνα, Ελλάδα");
+  // extra example marker removed to avoid duplicating the static pin
 
   // Εφάρμοσε φίλτρο (αν υπάρχει κέντρο)
   applySpatialFilter();
